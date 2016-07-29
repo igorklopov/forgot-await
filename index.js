@@ -8,58 +8,53 @@ function assert(cond) {
 }
 
 // npm i callsites
-function callsites(upstack) {
+function callsites() {
   const _ = Error.prepareStackTrace;
   Error.prepareStackTrace = (__, stack) => stack;
-  const stack = new Error().stack.slice(upstack + 1);
+  const stack = new Error().stack.slice(2); // callsites + marker.mark
   Error.prepareStackTrace = _;
   return stack;
 }
 
 const markPromiseMap = new Map();
 
-class MarkPromise {
-  constructor(ex, upstack = 0) {
-    this._promise = new Promise(ex);
-    assert(!markPromiseMap.has(this));
-    markPromiseMap.set(this);
-    this._callsites = callsites(upstack + 1);
-  }
-  then(...args) {
-    return this._promise.then(...args);
-  }
-  catch(...args) {
-    return this._promise.catch(...args);
-  }
-  _unmark() {
-    assert(markPromiseMap.has(this));
-    markPromiseMap.delete(this);
-    return this;
-  }
-  static topmostAsync(afn) {
-    return function() {
-      const p = afn();
-      assert(p.then);
-      p._unmark();
-      return p;
-    }
-  }
-  static check() {
-    if (markPromiseMap.size > 0) {
-      console.error("Unhandled resolution of the following",
-        markPromiseMap.size, "promise(s):");
-      console.error("==================");
-      for (const [ promise ] of markPromiseMap) {
-        console.error(promise._callsites.join("\n"));
-        console.error("==================");
-      }
-      process.exit(4);
-    }
-  }
-  static resolve(...args) {
-    return Promise.resolve(...args);
+Promise.marker = {};
+
+Promise.marker.mark = function(p) {
+  assert(!markPromiseMap.has(p));
+  markPromiseMap.set(p);
+  p._callsites = callsites();
+  p._unmark = unmarkPromise;
+  return p;
+}
+
+function unmarkPromise() {
+  assert(markPromiseMap.has(this));
+  markPromiseMap.delete(this);
+  return this;
+}
+
+Promise.marker.topmostAsync = function(afn) {
+  return function() {
+    const p = afn();
+    assert(p.then);
+    p._unmark();
+    return p;
   }
 }
+
+Promise.marker.checkMarkList = function() {
+  if (markPromiseMap.size > 0) {
+    console.error("Unhandled resolution of the following",
+      markPromiseMap.size, "promise(s):");
+    console.error("==================");
+    for (const [ promise ] of markPromiseMap) {
+      console.error(promise._callsites.join("\n"));
+      console.error("==================");
+    }
+    process.exit(4);
+  }
+};
 
 (function() {
   const helpers = require("babel-helpers");
@@ -70,7 +65,7 @@ class MarkPromise {
     (function (fn) {
       return function () {
         var gen = fn.apply(this, arguments);
-        return new Promise.MarkPromise(function (resolve, reject) {
+        return Promise.marker.mark(new Promise(function (resolve, reject) {
           function step(key, arg) {
             try {
               var info = gen[key](arg);
@@ -93,7 +88,7 @@ class MarkPromise {
             }
           }
           return step("next");
-        });
+        }));
       };
     })
   `);
@@ -112,5 +107,3 @@ class MarkPromise {
     helpers.default = helpers.get;
   }
 }());
-
-Promise.MarkPromise = MarkPromise;

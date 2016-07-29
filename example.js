@@ -1,10 +1,10 @@
 function inner() {
-  return new Promise.MarkPromise((resolve) => {
+  return Promise.marker.mark(new Promise((resolve) => {
     setTimeout(() => {
       console.log("ok");
       resolve();
     }, 1000);
-  });
+  }));
 }
 
 async function outer() {
@@ -13,12 +13,12 @@ async function outer() {
   console.log("FINISH");
 }
 
-Promise.MarkPromise.topmostAsync(async function() {
+Promise.marker.topmostAsync(async function() {
 
   console.log("start");
   await outer(); // ... and here
   console.log("finish");
-  Promise.MarkPromise.check();
+  Promise.marker.checkMarkList();
 
 })().catch((error) => {
   console.error(error);
