@@ -1,0 +1,43 @@
+{
+  "name": "forgot-await",
+  "version": "0.0.1",
+  "description": "Checks if you forgot `await` before async function call",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/igorklopov/forgot-await.git"
+  },
+  "keywords": [
+    "async",
+    "await",
+    "promise",
+    "unhandled",
+    "resolve",
+    "reject"
+  ],
+  "author": "Igor Klopov",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/igorklopov/forgot-await/issues"
+  },
+  "homepage": "https://github.com/igorklopov/forgot-await#readme",
+  "devDependencies": {
+    "babel-helpers": "^6.8.0",
+    "babel-plugin-transform-async-to-generator": "^6.8.0",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.8.0",
+    "babel-register": "^6.11.6",
+    "babel-template": "^6.9.0"
+  },
+  "engines": {
+    "node": "^6"
+  },
+  "babel": {
+    "plugins": [
+      "transform-es2015-modules-commonjs",
+      "transform-async-to-generator"
+    ]
+  }
+}
