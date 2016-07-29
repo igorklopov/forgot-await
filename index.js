@@ -7,23 +7,22 @@ function assert(cond) {
   }
 }
 
-// npm i callsites
-function callsites() {
-  const _ = Error.prepareStackTrace;
-  Error.prepareStackTrace = (__, stack) => stack;
-  const stack = new Error().stack.slice(2); // callsites + marker.mark
-  Error.prepareStackTrace = _;
-  return stack;
-}
-
 const markPromiseMap = new Map();
 
 Promise.marker = {};
 
-Promise.marker.mark = function(p) {
+Promise.marker.callsites = function(upstack) {
+  const _ = Error.prepareStackTrace;
+  Error.prepareStackTrace = (__, stack) => stack;
+  const stack = new Error().stack.slice(upstack);
+  Error.prepareStackTrace = _;
+  return stack;
+}
+
+Promise.marker.mark = function(p, stack_) {
   assert(!markPromiseMap.has(p));
   markPromiseMap.set(p);
-  p._stack = callsites();
+  p._stack = stack_ || Promise.marker.callsites(2);
   p._unmark = unmarkPromise;
   return p;
 }
@@ -63,6 +62,7 @@ Promise.marker.checkMarkList = function() {
   const _babelTemplate2 = _interopRequireDefault(_babelTemplate);
   const newAsyncToGenerator = (0, _babelTemplate2.default)(`
     (function (fn) {
+      var stack_ = Promise.marker.callsites(2);
       return function () {
         var gen = fn.apply(this, arguments);
         return Promise.marker.mark(new Promise(function (resolve, reject) {
@@ -88,7 +88,7 @@ Promise.marker.checkMarkList = function() {
             }
           }
           return step("next");
-        }));
+        }), stack_);
       };
     })
   `);
