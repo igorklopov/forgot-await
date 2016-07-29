@@ -23,7 +23,7 @@ Promise.marker = {};
 Promise.marker.mark = function(p) {
   assert(!markPromiseMap.has(p));
   markPromiseMap.set(p);
-  p._callsites = callsites();
+  p._stack = callsites();
   p._unmark = unmarkPromise;
   return p;
 }
@@ -49,7 +49,7 @@ Promise.marker.checkMarkList = function() {
       markPromiseMap.size, "promise(s):");
     console.error("==================");
     for (const [ promise ] of markPromiseMap) {
-      console.error(promise._callsites.join("\n"));
+      console.error(promise._stack.join("\n"));
       console.error("==================");
     }
     process.exit(4);
