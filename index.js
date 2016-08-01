@@ -17,6 +17,12 @@ Promise.marker.callsites = function(upstack) {
   const stack = new Error().stack.slice(upstack);
   Error.prepareStackTrace = _;
   return stack;
+};
+
+function unmarkPromise() {
+  assert(markPromiseMap.has(this));
+  markPromiseMap.delete(this);
+  return this;
 }
 
 Promise.marker.mark = function(p, stack_) {
@@ -25,13 +31,7 @@ Promise.marker.mark = function(p, stack_) {
   p._stack = stack_ || Promise.marker.callsites(2);
   p._unmark = unmarkPromise;
   return p;
-}
-
-function unmarkPromise() {
-  assert(markPromiseMap.has(this));
-  markPromiseMap.delete(this);
-  return this;
-}
+};
 
 Promise.marker.topmostAsync = function(afn) {
   return function() {
@@ -39,8 +39,8 @@ Promise.marker.topmostAsync = function(afn) {
     assert(p.then);
     p._unmark();
     return p;
-  }
-}
+  };
+};
 
 Promise.marker.checkMarkList = function() {
   if (markPromiseMap.size > 0) {
